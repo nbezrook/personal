@@ -96,7 +96,7 @@ function createMiniWinLayer(mainContent,oTitle,oLeft,oTop,oWidth,barColour,mainC
 			'<table border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td>'+
 			'<td align="left" valign="middle" height="16" width="20">'+
 			'<a href="javascript:manuf();" onfocus="this.blur()" onmouseover="window.status=\'Click for information about creating these mini windows\';return true;" onmouseout="window.status=\'\';return true;">'+
-			'<img src="https://www.dropbox.com/s/u6rrgqi6h65zlc8/cry.png?raw=1" border="0" height="16" width="16" alt="Info."></a></td>'+
+			'<img src="cry.png" border="0" height="16" width="16" alt="Info."></a></td>'+
 			'<td align="left" valign="middle">'+(oFullDrag?'':'<ilayer width="'+(oWidth-74)+'" height="16" left="0" top="0"><layer width="'+(oWidth-74)+'" height="16" left="0" top="0"'+theDragString+'>')+
 			'<font color="#ffffff" face="Arial" size="-1"><b>'+oTitle+
 			'</b></font>'+(oFullDrag?'':'</layer></ilayer>')+'</td><td align="right" valign="middle" width="32">'+
@@ -110,7 +110,7 @@ function createMiniWinLayer(mainContent,oTitle,oLeft,oTop,oWidth,barColour,mainC
 			'<table border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td>'+
 			'<td align="left" valign="middle" height="16" width="20">'+
 			'<a href="javascript:manuf();" onfocus="this.blur()" onmouseover="window.status=\'Click for information about creating these mini windows\';return true;" onmouseout="window.status=\'\';return true;">'+
-			'<img src="https://www.dropbox.com/s/u6rrgqi6h65zlc8/cry.png?raw=1" border="0" height="16" width="16" alt="Info."></a></td>'+
+			'<img src="cry.png" border="0" height="16" width="16" alt="Info."></a></td>'+
 			'<td align="left" valign="middle">'+(oFullDrag?'':'<ilayer width="'+(oWidth-74)+'" height="16" left="0" top="0"><layer width="100%" left="0" top="0"'+theDragString+'>')+
 			'<font color="#ffffff" face="Arial" size="-1"><b>'+oTitle+
 			'</b></font>'+(oFullDrag?'':'</layer></ilayer>')+'</td><td align="right" valign="middle" width="32">'+
@@ -131,7 +131,7 @@ function createMiniWinLayer(mainContent,oTitle,oLeft,oTop,oWidth,barColour,mainC
 			'<table border="0" cellpadding="2" cellspacing="0" width="100%"><tr>'+
 			'<td bgcolor="'+barColour+'" align="left" valign="middle" height="16" width="20">'+
 			'<a style="text-decoration:none;cursor:default;" href="javascript:manuf();" onfocus="this.blur()" onmouseover="window.status=\'Click for information about creating these mini windows\';return true;" onmouseout="window.status=\'\';return true;" title="Info.">'+
-			'<img src="https://www.dropbox.com/s/u6rrgqi6h65zlc8/cry.png?raw=1" border="0" height="16" width="16" alt="Info."></a></td>'+
+			'<img src="cry.png" border="0" height="16" width="16" alt="Info."></a></td>'+
 			'<td bgcolor="'+barColour+'" align="left" valign="middle" style="color:#ffffff;font-family:Arial,Sans-Serif;font-weight:bold;font-size:12px;cursor:default;" '+
 			'onmouseover="window.status=\'Drag here to move the mini window\';return true;" onmouseout="window.status=\'\';return true;"'+
 			(oFullDrag?'':theDragString)+' nowrap>'+oTitle+'</td><td bgcolor="'+barColour+'" align="right" valign="middle" width="34"><nobr>'+
@@ -153,7 +153,7 @@ function createMiniWinLayer(mainContent,oTitle,oLeft,oTop,oWidth,barColour,mainC
 			'<table border="0" cellpadding="2" cellspacing="0" width="100%"><tr>'+
 			'<td bgcolor="'+barColour+'" align="left" valign="middle" height="16" width="20">'+
 			'<a style="text-decoration:none;cursor:default;" href="javascript:manuf();" onfocus="this.blur()" onmouseover="window.status=\'Click for information about creating these mini windows\';return true;" onmouseout="window.status=\'\';return true;" title="Info.">'+
-			'<img src="https://www.dropbox.com/s/u6rrgqi6h65zlc8/cry.png?raw=1" border="0" height="16" width="16" alt="Info."></a></td>'+
+			'<img src="cry.png" border="0" height="16" width="16" alt="Info."></a></td>'+
 			'<td bgcolor="'+barColour+'" align="left" valign="middle" style="color:#ffffff;font-family:Arial,Sans-Serif;font-weight:bold;font-size:12px;cursor:default;" '+
 			'onmouseover="window.status=\'Drag here to move the mini window\';return true;" onmouseout="window.status=\'\';return true;"'+
 			(oFullDrag?'':theDragString)+' nowrap>'+oTitle+'</td><td bgcolor="'+barColour+'" align="right" valign="middle" width="34"><nobr>'+
