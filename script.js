@@ -321,5 +321,5 @@ function showMinWin(thisDiv,thatDiv) {
 }
 
 function manuf() {
-	window.alert('Non omnis moriar.');
+	window.alert('μὴ μοῦ τοὺς κύκλους τάραττε:');
 }
