@@ -1,8 +1,9 @@
 <!DOCTYPE html>
+<!-- you can steal this from me if you want :) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Pendulum Ensemble & Liouville's Theorem</title>
+    <title>nekosattva's demonstration of liouville's theorem</title>
     <style>
         body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; margin: 20px; text-align: center; }
         .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
@@ -14,26 +15,27 @@
     </style>
 </head>
 <body>
-    <h2>Liouville's Theorem: Pendulum Phase Space Ensemble</h2>
+    <h2>nekosattva's demonstration of liouville's theorem</h2>
     <div class="controls">
-        <button id="playBtn">Pause</button>
-        <button id="resetBtn">Reset Ensemble</button>
-        <label><input type="checkbox" id="dampedCheck"> Enable Damping ($\gamma > 0$)</label>
-        <div class="stat-box">Phase Area: <span id="areaVal" style="color: #38bdf8;">0.000</span></div>
+        <button id="playBtn">pause</button>
+        <button id="resetBtn">reset</button>
+        <label><input type="checkbox" id="dampedCheck"> dampening, s.t. 𝛾 > 0</label>
+        <div class="stat-box">area of the polygon in phase space: <span id="areaVal" style="color: #38bdf8;">0.000</span></div>
     </div>
 
     <div class="container">
         <div>
-            <h3>Physical Space ($x, y$)</h3>
+            <h3>physical space (x, y)</h3>
             <canvas id="physCanvas" width="400" height="400"></canvas>
         </div>
         <div>
-            <h3>Phase Space ($\theta$ vs. $\omega$)</h3>
+            <h3>phase space (𝜃 vs. 𝝎)</h3>
             <canvas id="phaseCanvas" width="400" height="400"></canvas>
         </div>
     </div>
 
     <script>
+		// set up Canvas references
         const physCanvas = document.getElementById('physCanvas');
         const phaseCanvas = document.getElementById('phaseCanvas');
         const pCtx = physCanvas.getContext('2d');
@@ -42,14 +44,16 @@
         let isRunning = true;
         let isDamped = false;
         
+		//gravity 
         const g = 9.81, L = 1.0;
         const omega0Sq = g / L;
         
-        // Construct an initial circular patch (ensemble) in phase space
+        // initial in phase space
         const N_BOUNDARY = 100;
         const centerTheta = 0.8, centerOmega = 0.0, radius = 0.15;
         let points = [];
 
+		// set up ensemble
         function initEnsemble() {
             points = [];
             for (let i = 0; i < N_BOUNDARY; i++) {
@@ -61,7 +65,7 @@
             }
         }
 
-        // Equations of Motion
+        // motion equations
         function derivatives(theta, omega, damped) {
             const gamma = damped ? 0.3 : 0.0;
             return {
@@ -70,7 +74,7 @@
             };
         }
 
-        // Runge-Kutta 4th Order Integrator
+        // RK 4th order integration
         function stepRK4(pt, dt, damped) {
             let k1 = derivatives(pt.theta, pt.omega, damped);
             let k2 = derivatives(pt.theta + 0.5*dt*k1.dTheta, pt.omega + 0.5*dt*k1.dOmega, damped);
@@ -81,7 +85,7 @@
             pt.omega += (dt / 6) * (k1.dOmega + 2*k2.dOmega + 2*k3.dOmega + k4.dOmega);
         }
 
-        // Calculate Polygon Area (Shoelace Formula)
+        // polygon area -- shoelace formula 
         function calculatePhaseArea() {
             let area = 0;
             for (let i = 0; i < points.length; i++) {
@@ -93,7 +97,7 @@
         }
 
         function draw() {
-            // Draw Physical Pendulums
+            // pivot and ball
             pCtx.clearRect(0, 0, physCanvas.width, physCanvas.height);
             const cx = 200, cy = 100, rodLength = 180;
             
@@ -112,10 +116,10 @@
                 pCtx.fill();
             });
 
-            // Draw Phase Space
+            // phase space in canvas
             phCtx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
             
-            // Axes
+            // axes
             phCtx.strokeStyle = '#475569';
             phCtx.beginPath();
             phCtx.moveTo(0, 200); phCtx.lineTo(400, 200); // Theta axis
@@ -130,7 +134,7 @@
                 };
             }
 
-            // Draw Phase Ensemble Polygon
+            // phase space poly
             phCtx.beginPath();
             let start = toCanvas(points[0].theta, points[0].omega);
             phCtx.moveTo(start.x, start.y);
@@ -145,7 +149,7 @@
             phCtx.fill();
             phCtx.stroke();
         }
-
+		// update canvas
         function update() {
             if (isRunning) {
                 const dt = 0.02;
@@ -155,7 +159,8 @@
             draw();
             requestAnimationFrame(update);
         }
-
+		
+		//button logic
         document.getElementById('playBtn').onclick = (e) => {
             isRunning = !isRunning;
             e.target.innerText = isRunning ? 'Pause' : 'Play';
