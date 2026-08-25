@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pendulum Ensemble & Liouville's Theorem</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; margin: 20px; text-align: center; }
+        .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
+        canvas { background: #1e293b; border: 1px solid #475569; border-radius: 8px; }
+        .controls { margin-top: 15px; display: flex; gap: 15px; justify-content: center; align-items: center; }
+        button { padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+        .stat-box { background: #334155; padding: 10px 20px; border-radius: 6px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h2>Liouville's Theorem: Pendulum Phase Space Ensemble</h2>
+    <div class="controls">
+        <button id="playBtn">Pause</button>
+        <button id="resetBtn">Reset Ensemble</button>
+        <label><input type="checkbox" id="dampedCheck"> Enable Damping ($\gamma > 0$)</label>
+        <div class="stat-box">Phase Area: <span id="areaVal" style="color: #38bdf8;">0.000</span></div>
+    </div>
+
+    <div class="container">
+        <div>
+            <h3>Physical Space ($x, y$)</h3>
+            <canvas id="physCanvas" width="400" height="400"></canvas>
+        </div>
+        <div>
+            <h3>Phase Space ($\theta$ vs. $\omega$)</h3>
+            <canvas id="phaseCanvas" width="400" height="400"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const physCanvas = document.getElementById('physCanvas');
+        const phaseCanvas = document.getElementById('phaseCanvas');
+        const pCtx = physCanvas.getContext('2d');
+        const phCtx = phaseCanvas.getContext('2d');
+        
+        let isRunning = true;
+        let isDamped = false;
+        
+        const g = 9.81, L = 1.0;
+        const omega0Sq = g / L;
+        
+        // Construct an initial circular patch (ensemble) in phase space
+        const N_BOUNDARY = 100;
+        const centerTheta = 0.8, centerOmega = 0.0, radius = 0.15;
+        let points = [];
+
+        function initEnsemble() {
+            points = [];
+            for (let i = 0; i < N_BOUNDARY; i++) {
+                let angle = (i / N_BOUNDARY) * 2 * Math.PI;
+                points.push({
+                    theta: centerTheta + radius * Math.cos(angle),
+                    omega: centerOmega + radius * Math.sin(angle)
+                });
+            }
+        }
+
+        // Equations of Motion
+        function derivatives(theta, omega, damped) {
+            const gamma = damped ? 0.3 : 0.0;
+            return {
+                dTheta: omega,
+                dOmega: -omega0Sq * Math.sin(theta) - gamma * omega
+            };
+        }
+
+        // Runge-Kutta 4th Order Integrator
+        function stepRK4(pt, dt, damped) {
+            let k1 = derivatives(pt.theta, pt.omega, damped);
+            let k2 = derivatives(pt.theta + 0.5*dt*k1.dTheta, pt.omega + 0.5*dt*k1.dOmega, damped);
+            let k3 = derivatives(pt.theta + 0.5*dt*k2.dTheta, pt.omega + 0.5*dt*k2.dOmega, damped);
+            let k4 = derivatives(pt.theta + dt*k3.dTheta, pt.omega + dt*k3.dOmega, damped);
+
+            pt.theta += (dt / 6) * (k1.dTheta + 2*k2.dTheta + 2*k3.dTheta + k4.dTheta);
+            pt.omega += (dt / 6) * (k1.dOmega + 2*k2.dOmega + 2*k3.dOmega + k4.dOmega);
+        }
+
+        // Calculate Polygon Area (Shoelace Formula)
+        function calculatePhaseArea() {
+            let area = 0;
+            for (let i = 0; i < points.length; i++) {
+                let j = (i + 1) % points.length;
+                area += points[i].theta * points[j].omega;
+                area -= points[j].theta * points[i].omega;
+            }
+            return Math.abs(area) / 2.0;
+        }
+
+        function draw() {
+            // Draw Physical Pendulums
+            pCtx.clearRect(0, 0, physCanvas.width, physCanvas.height);
+            const cx = 200, cy = 100, rodLength = 180;
+            
+            pCtx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+            pCtx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+            
+            points.forEach(pt => {
+                let px = cx + rodLength * Math.sin(pt.theta);
+                let py = cy + rodLength * Math.cos(pt.theta);
+                pCtx.beginPath();
+                pCtx.moveTo(cx, cy);
+                pCtx.lineTo(px, py);
+                pCtx.stroke();
+                pCtx.beginPath();
+                pCtx.arc(px, py, 4, 0, 2*Math.PI);
+                pCtx.fill();
+            });
+
+            // Draw Phase Space
+            phCtx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+            
+            // Axes
+            phCtx.strokeStyle = '#475569';
+            phCtx.beginPath();
+            phCtx.moveTo(0, 200); phCtx.lineTo(400, 200); // Theta axis
+            phCtx.moveTo(200, 0); phCtx.lineTo(200, 400); // Omega axis
+            phCtx.stroke();
+
+            // Transform coordinates: Theta [-3, 3] -> [0, 400], Omega [-6, 6] -> [400, 0]
+            function toCanvas(th, om) {
+                return {
+                    x: 200 + (th / 3.0) * 200,
+                    y: 200 - (om / 6.0) * 200
+                };
+            }
+
+            // Draw Phase Ensemble Polygon
+            phCtx.beginPath();
+            let start = toCanvas(points[0].theta, points[0].omega);
+            phCtx.moveTo(start.x, start.y);
+            for (let i = 1; i < points.length; i++) {
+                let p = toCanvas(points[i].theta, points[i].omega);
+                phCtx.lineTo(p.x, p.y);
+            }
+            phCtx.closePath();
+            phCtx.fillStyle = isDamped ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+            phCtx.strokeStyle = isDamped ? '#ef4444' : '#38bdf8';
+            phCtx.lineWidth = 2;
+            phCtx.fill();
+            phCtx.stroke();
+        }
+
+        function update() {
+            if (isRunning) {
+                const dt = 0.02;
+                points.forEach(pt => stepRK4(pt, dt, isDamped));
+                document.getElementById('areaVal').innerText = calculatePhaseArea().toFixed(4);
+            }
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        document.getElementById('playBtn').onclick = (e) => {
+            isRunning = !isRunning;
+            e.target.innerText = isRunning ? 'Pause' : 'Play';
+        };
+        document.getElementById('resetBtn').onclick = () => initEnsemble();
+        document.getElementById('dampedCheck').onchange = (e) => {
+            isDamped = e.target.checked;
+        };
+
+        initEnsemble();
+        update();
+    </script>
+</body>
+</html>
