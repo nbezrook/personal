@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nekosattva's generalized harmonic analysis for the study of Wiener character groups</title>
+  
+  <!-- KaTeX core CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <!-- KaTeX Auto-Render Extension -->
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #0f111a;
+      --panel-bg: #1a1d2e;
+      --accent-blue: #00d2ff;
+      --accent-magenta: #ff007f;
+      --accent-amber: #ffb703;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border-color: #2e354f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    header {
+      padding: 1.2rem 2rem;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    header .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .main-container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      flex: 1;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .sidebar {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .control-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    input[type="range"] {
+      accent-color: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    .mode-toggle {
+      display: flex;
+      background: var(--bg-color);
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid var(--border-color);
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 0.5rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: var(--accent-blue);
+      color: #000;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .canvas-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .canvas-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .canvas-card.full-width {
+      grid-column: span 2;
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #090a10;
+      border-radius: 4px;
+    }
+
+    .math-display {
+      background: var(--bg-color);
+      padding: 0.8rem 1.2rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-size: 1rem;
+      overflow-x: auto;
+    }
+
+    .info-box {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      background: rgba(0, 210, 255, 0.05);
+      border-left: 3px solid var(--accent-blue);
+      padding: 0.6rem;
+      border-radius: 0 4px 4px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>generalized harmonic analysis</h1>
+      <div class="subtitle">Wiener Group Characters &amp; Spectral Representations ($e^{i\lambda x}$)</div>
+    </div>
+    <div id="equation-header" class="math-display"></div>
+  </header>
+
+  <div class="main-container">
+    <!-- Sidebar Controls -->
+    <div class="sidebar">
+      <div class="control-group">
+        <label>Representation Mode</label>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="btn-discrete" onclick="setMode('discrete')">Discrete $\sum_k$</button>
+          <button class="mode-btn" id="btn-continuous" onclick="setMode('continuous')">Continuous $\int$</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label for="preset-select">Signal Preset</label>
+        <select id="preset-select" onchange="updatePreset()">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <div class="control-group" id="group-components">
+        <label>Harmonics / Integration Steps <span id="val-components">8</span></label>
+        <input type="range" id="slider-components" min="1" max="100" value="8" oninput="updateParams()">
+      </div>
+
+      <div class="control-group">
+        <label>Center Frequency ($\lambda_0$) <span id="val-freq">2.0</span></label>
+        <input type="range" id="slider-freq" min="0" max="10" step="0.1" value="2.0" oninput="updateParams()">
+      </div>
+
+      <div class="control-group" id="group-bandwidth">
+        <label>Spectral Bandwidth ($\sigma$) <span id="val-bandwidth">1.0</span></label>
+        <input type="range" id="slider-bandwidth" min="0.1" max="5.0" step="0.1" value="1.0" oninput="updateParams()">
+      </div>
+
+      <div class="control-group">
+        <label>Domain Translation Speed ($T$) <span id="val-speed">1.0</span></label>
+        <input type="range" id="slider-speed" min="0" max="3" step="0.1" value="1.0" oninput="updateParams()">
+      </div>
+
+      <div class="info-box" id="info-text">
+        Under domain shift $x \to x + T$, each group character $f_\lambda(x) = e^{i\lambda x}$ scales by its phase factor $\alpha(T) = e^{i\lambda T}$.
+      </div>
+    </div>
+
+    <!-- Visualization Canvases -->
+    <div class="workspace">
+      <div class="canvas-row">
+        <!-- Phasor Chain / Epicycles -->
+        <div class="canvas-card">
+          <div class="card-title">
+            <span style="color: var(--accent-blue);">●</span> Complex Plane Phasor Chain $\sum A_k e^{i\lambda_k x}$
+          </div>
+          <canvas id="canvas-phasors"></canvas>
+        </div>
+
+        <!-- Frequency Spectrum -->
+        <div class="canvas-card">
+          <div class="card-title">
+            <span style="color: var(--accent-amber);">●</span> Frequency Spectrum $a(\lambda)$
+          </div>
+          <canvas id="canvas-spectrum"></canvas>
+        </div>
+      </div>
+
+      <!-- Spatial Signal Plot -->
+      <div class="canvas-card full-width">
+        <div class="card-title">
+          <span style="color: var(--accent-magenta);">●</span> Reconstructed Signal $h(x)$ [Real: Blue | Imag: Magenta | Envelope: Amber]
+        </div>
+        <canvas id="canvas-signal"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let mode = 'discrete';
+    let timeShift = 0;
+
+    const presetSelect = document.getElementById('preset-select');
+    const sliderComponents = document.getElementById('slider-components');
+    const sliderFreq = document.getElementById('slider-freq');
+    const sliderBandwidth = document.getElementById('slider-bandwidth');
+    const sliderSpeed = document.getElementById('slider-speed');
+
+    const canvasPhasors = document.getElementById('canvas-phasors');
+    const canvasSpectrum = document.getElementById('canvas-spectrum');
+    const canvasSignal = document.getElementById('canvas-signal');
+
+    const ctxPhasors = canvasPhasors.getContext('2d');
+    const ctxSpectrum = canvasSpectrum.getContext('2d');
+    const ctxSignal = canvasSignal.getContext('2d');
+
+    const presets = {
+      discrete: [
+        { name: "Square Wave (Odd Harmonics)", id: "square" },
+        { name: "Sawtooth Wave (All Harmonics)", id: "saw" },
+        { name: "Two-Tone Interference", id: "twotone" }
+      ],
+      continuous: [
+        { name: "Gaussian Wavepacket", id: "gaussian" },
+        { name: "Rectangular Spectral Box", id: "box" },
+        { name: "Triangular Spectrum", id: "tri" }
+      ]
+    };
+
+    function init() {
+      // Parse static LaTeX math in HTML text nodes
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false }
+        ],
+        throwOnError: false
+      });
+
+      resizeCanvases();
+      window.addEventListener('resize', resizeCanvases);
+      setMode('discrete');
+      requestAnimationFrame(animate);
+    }
+
+    function resizeCanvases() {
+      [canvasPhasors, canvasSpectrum, canvasSignal].forEach(c => {
+        c.width = c.clientWidth * window.devicePixelRatio;
+        c.height = c.clientHeight * window.devicePixelRatio;
+      });
+    }
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('btn-discrete').classList.toggle('active', mode === 'discrete');
+      document.getElementById('btn-continuous').classList.toggle('active', mode === 'continuous');
+
+      presetSelect.innerHTML = presets[mode]
+        .map(p => `<option value="${p.id}">${p.name}</option>`)
+        .join('');
+
+      document.getElementById('group-bandwidth').style.display = (mode === 'continuous') ? 'flex' : 'none';
+      
+      updateEquationHeader();
+      updateParams();
+    }
+
+    function updatePreset() {
+      updateParams();
+    }
+
+    function updateParams() {
+      document.getElementById('val-components').innerText = sliderComponents.value;
+      document.getElementById('val-freq').innerText = parseFloat(sliderFreq.value).toFixed(1);
+      document.getElementById('val-bandwidth').innerText = parseFloat(sliderBandwidth.value).toFixed(1);
+      document.getElementById('val-speed').innerText = parseFloat(sliderSpeed.value).toFixed(1);
+    }
+
+    function updateEquationHeader() {
+      const eqHeader = document.getElementById('equation-header');
+      if (mode === 'discrete') {
+        katex.render("h(x) = \\sum_{k=1}^N A_k e^{i (\\lambda_k x + \\alpha_k(T))}", eqHeader, { displayMode: true });
+      } else {
+        katex.render("h(x) = \\int_{-\\infty}^{\\infty} a(\\lambda) e^{i (\\lambda x + \\alpha(T))} d\\lambda", eqHeader, { displayMode: true });
+      }
+    }
+
+    function getSpectrumComponents() {
+      const N = parseInt(sliderComponents.value);
+      const lambda0 = parseFloat(sliderFreq.value);
+      const sigma = parseFloat(sliderBandwidth.value);
+      const preset = presetSelect.value;
+
+      let components = [];
+
+      if (mode === 'discrete') {
+        if (preset === 'square') {
+          for (let k = 1; k <= N; k++) {
+            const n = 2 * k - 1;
+            components.push({
+              lambda: n * lambda0,
+              amp: 4 / (Math.PI * n),
+              phase: 0
+            });
+          }
+        } else if (preset === 'saw') {
+          for (let k = 1; k <= N; k++) {
+            components.push({
+              lambda: k * lambda0,
+              amp: 2 / (Math.PI * k),
+              phase: 0
+            });
+          }
+        } else if (preset === 'twotone') {
+          components.push({ lambda: lambda0, amp: 1.0, phase: 0 });
+          components.push({ lambda: lambda0 + sigma, amp: 0.8, phase: 0 });
+        }
+      } else {
+        const minLambda = Math.max(0.01, lambda0 - 3 * sigma);
+        const maxLambda = lambda0 + 3 * sigma;
+        const dLambda = (maxLambda - minLambda) / N;
+
+        for (let i = 0; i < N; i++) {
+          const l = minLambda + (i + 0.5) * dLambda;
+          let a = 0;
+
+          if (preset === 'gaussian') {
+            a = Math.exp(-Math.pow(l - lambda0, 2) / (2 * sigma * sigma));
+          } else if (preset === 'box') {
+            a = Math.abs(l - lambda0) <= sigma ? 1.0 : 0.0;
+          } else if (preset === 'tri') {
+            a = Math.max(0, 1.0 - Math.abs(l - lambda0) / sigma);
+          }
+
+          components.push({
+            lambda: l,
+            amp: a * dLambda,
+            rawAmp: a,
+            phase: 0
+          });
+        }
+      }
+
+      return components;
+    }
+
+    function evaluateSignal(x, components) {
+      let re = 0;
+      let im = 0;
+
+      components.forEach(c => {
+        const angle = c.lambda * x + timeShift * c.lambda;
+        re += c.amp * Math.cos(angle);
+        im += c.amp * Math.sin(angle);
+      });
+
+      const mag = Math.sqrt(re * re + im * im);
+      return { re, im, mag };
+    }
+
+    function animate() {
+      const speed = parseFloat(sliderSpeed.value);
+      timeShift += 0.02 * speed;
+
+      const components = getSpectrumComponents();
+
+      drawPhasors(components);
+      drawSpectrum(components);
+      drawSignal(components);
+
+      requestAnimationFrame(animate);
+    }
+
+    function drawPhasors(components) {
+      const w = canvasPhasors.width;
+      const h = canvasPhasors.height;
+      ctxPhasors.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = Math.min(w, h) * 0.25;
+
+      ctxPhasors.strokeStyle = '#2e354f';
+      ctxPhasors.lineWidth = 1;
+      ctxPhasors.beginPath();
+      ctxPhasors.moveTo(0, cy); ctxPhasors.lineTo(w, cy);
+      ctxPhasors.moveTo(cx, 0); ctxPhasors.lineTo(cx, h);
+      ctxPhasors.stroke();
+
+      let currX = cx;
+      let currY = cy;
+
+      components.forEach((c, idx) => {
+        const angle = timeShift * c.lambda;
+        const radius = c.amp * scale;
+
+        const nextX = currX + radius * Math.cos(angle);
+        const nextY = currY - radius * Math.sin(angle);
+
+        ctxPhasors.strokeStyle = 'rgba(0, 210, 255, 0.15)';
+        ctxPhasors.beginPath();
+        ctxPhasors.arc(currX, currY, radius, 0, 2 * Math.PI);
+        ctxPhasors.stroke();
+
+        ctxPhasors.strokeStyle = idx === 0 ? '#00d2ff' : '#ff007f';
+        ctxPhasors.lineWidth = 2;
+        ctxPhasors.beginPath();
+        ctxPhasors.moveTo(currX, currY);
+        ctxPhasors.lineTo(nextX, nextY);
+        ctxPhasors.stroke();
+
+        currX = nextX;
+        currY = nextY;
+      });
+
+      ctxPhasors.fillStyle = '#ffb703';
+      ctxPhasors.beginPath();
+      ctxPhasors.arc(currX, currY, 4, 0, 2 * Math.PI);
+      ctxPhasors.fill();
+    }
+
+    function drawSpectrum(components) {
+      const w = canvasSpectrum.width;
+      const h = canvasSpectrum.height;
+      ctxSpectrum.clearRect(0, 0, w, h);
+
+      const margin = 40;
+      const plotWidth = w - 2 * margin;
+      const plotHeight = h - 2 * margin;
+
+      ctxSpectrum.strokeStyle = '#2e354f';
+      ctxSpectrum.lineWidth = 1;
+      ctxSpectrum.beginPath();
+      ctxSpectrum.moveTo(margin, h - margin); ctxSpectrum.lineTo(w - margin, h - margin);
+      ctxSpectrum.moveTo(margin, margin); ctxSpectrum.lineTo(margin, h - margin);
+      ctxSpectrum.stroke();
+
+      const maxLambda = Math.max(12, parseFloat(sliderFreq.value) + 3 * parseFloat(sliderBandwidth.value));
+
+      if (mode === 'discrete') {
+        components.forEach(c => {
+          const x = margin + (c.lambda / maxLambda) * plotWidth;
+          const barH = (c.amp / 1.5) * plotHeight;
+          const y = h - margin - barH;
+
+          ctxSpectrum.strokeStyle = '#ffb703';
+          ctxSpectrum.lineWidth = 3;
+          ctxSpectrum.beginPath();
+          ctxSpectrum.moveTo(x, h - margin);
+          ctxSpectrum.lineTo(x, y);
+          ctxSpectrum.stroke();
+
+          ctxSpectrum.fillStyle = '#ffb703';
+          ctxSpectrum.beginPath();
+          ctxSpectrum.arc(x, y, 4, 0, 2 * Math.PI);
+          ctxSpectrum.fill();
+        });
+      } else {
+        ctxSpectrum.strokeStyle = '#ffb703';
+        ctxSpectrum.lineWidth = 2;
+        ctxSpectrum.beginPath();
+
+        components.forEach((c, idx) => {
+          const x = margin + (c.lambda / maxLambda) * plotWidth;
+          const y = h - margin - (c.rawAmp) * (plotHeight * 0.8);
+
+          if (idx === 0) ctxSpectrum.moveTo(x, y);
+          else ctxSpectrum.lineTo(x, y);
+        });
+        ctxSpectrum.stroke();
+      }
+    }
+
+    function drawSignal(components) {
+      const w = canvasSignal.width;
+      const h = canvasSignal.height;
+      ctxSignal.clearRect(0, 0, w, h);
+
+      const cy = h / 2;
+      const xRange = 10;
+      const scale = h * 0.25;
+
+      ctxSignal.strokeStyle = '#2e354f';
+      ctxSignal.lineWidth = 1;
+      ctxSignal.beginPath();
+      ctxSignal.moveTo(0, cy); ctxSignal.lineTo(w, cy);
+      ctxSignal.stroke();
+
+      // Real Part Plot
+      ctxSignal.strokeStyle = '#00d2ff';
+      ctxSignal.lineWidth = 2;
+      ctxSignal.beginPath();
+      for (let px = 0; px < w; px++) {
+        const x = (px / w - 0.5) * xRange;
+        const res = evaluateSignal(x, components);
+        const py = cy - res.re * scale;
+        if (px === 0) ctxSignal.moveTo(px, py);
+        else ctxSignal.lineTo(px, py);
+      }
+      ctxSignal.stroke();
+
+      // Imaginary Part Plot
+      ctxSignal.strokeStyle = '#ff007f';
+      ctxSignal.lineWidth = 1.5;
+      ctxSignal.beginPath();
+      for (let px = 0; px < w; px++) {
+        const x = (px / w - 0.5) * xRange;
+        const res = evaluateSignal(x, components);
+        const py = cy - res.im * scale;
+        if (px === 0) ctxSignal.moveTo(px, py);
+        else ctxSignal.lineTo(px, py);
+      }
+      ctxSignal.stroke();
+
+      // Envelope |h(x)| Plot
+      ctxSignal.strokeStyle = '#ffb703';
+      ctxSignal.setLineDash([4, 4]);
+      ctxSignal.lineWidth = 1.5;
+      ctxSignal.beginPath();
+      for (let px = 0; px < w; px++) {
+        const x = (px / w - 0.5) * xRange;
+        const res = evaluateSignal(x, components);
+        const py = cy - res.mag * scale;
+        if (px === 0) ctxSignal.moveTo(px, py);
+        else ctxSignal.lineTo(px, py);
+      }
+      ctxSignal.stroke();
+      ctxSignal.setLineDash([]);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
