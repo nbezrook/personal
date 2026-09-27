@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nekosattva's demonstration of liouville's theorem &amp; wiener fourier ergodicity</title>
+
+    <!-- KaTeX core CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 20px; text-align: center; }
+        .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
+        .canvas-card { background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        canvas { background: #0f172a; border: 1px solid #334155; border-radius: 6px; }
+        .controls { margin-top: 15px; display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap; }
+        button, select { padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        button:hover { background: #1d4ed8; }
+        select { background: #1e293b; border: 1px solid #475569; }
+        .stat-box { background: #334155; padding: 8px 16px; border-radius: 6px; font-family: monospace; font-size: 0.85rem; }
+        .math-header { background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 10px 20px; margin: 15px auto; max-width: 900px; font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+    <h2>nekosattva's demonstration of liouville's theorem &amp; wiener fourier ergodicity</h2>
+    
+    <div id="equation-header" class="math-header"></div>
+
+    <div class="controls">
+        <button id="playBtn">pause</button>
+        <button id="resetBtn">reset</button>
+        <label><input type="checkbox" id="dampedCheck"> dampening, s.t. $\gamma > 0$</label>
+        
+        <label for="obsSelect">Observable $h(x)$:</label>
+        <select id="obsSelect">
+            <option value="kinetic">Kinetic Energy: h(x) = &frac12;&omega;&sup2;</option>
+            <option value="potential">Potential Energy: h(x) = 1 - cos(t)</option>
+            <option value="asymmetric">Asymmetric Field: h(x) = t + &frac12;&omega;&sup2;</option>
+        </select>
+
+        <div class="stat-box">Phase Area $\mu(E)$: <span id="areaVal" style="color: #38bdf8;">0.0000</span></div>
+        <div class="stat-box">Phase Avg $\int_E h(x)dx$: <span id="c0Val" style="color: #38bdf8;">0.0000</span></div>
+        <div class="stat-box">Time Avg $h_T(x)$: <span id="avgVal" style="color: #f59e0b;">0.0000</span></div>
+    </div>
+
+    <div class="container">
+        <div class="canvas-card">
+            <h3>physical space (x, y)</h3>
+            <canvas id="physCanvas" width="380" height="300"></canvas>
+        </div>
+        <div class="canvas-card">
+            <h3>phase space trajectory $T_t x$ in $E$</h3>
+            <canvas id="phaseCanvas" width="380" height="300"></canvas>
+        </div>
+        <div class="canvas-card">
+            <h3>group characters $f_\lambda(x)$ &amp; coefficients $A_\lambda$</h3>
+            <canvas id="spectrumCanvas" width="380" height="300"></canvas>
+        </div>
+        <div class="canvas-card">
+            <h3>ergodic limit $\lim_{T \to \infty} h_T(x) = \int_E h(x) dx$</h3>
+            <canvas id="ergodicCanvas" width="380" height="300"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Canvas references
+        const physCanvas = document.getElementById('physCanvas');
+        const phaseCanvas = document.getElementById('phaseCanvas');
+        const spectrumCanvas = document.getElementById('spectrumCanvas');
+        const ergodicCanvas = document.getElementById('ergodicCanvas');
+
+        const pCtx = physCanvas.getContext('2d');
+        const phCtx = phaseCanvas.getContext('2d');
+        const spCtx = spectrumCanvas.getContext('2d');
+        const erCtx = ergodicCanvas.getContext('2d');
+        
+        let isRunning = true;
+        let isDamped = false;
+        
+        // Pendulum constants
+        const g = 9.81, L = 1.0;
+        const omega0Sq = g / L;
+        const omega0 = Math.sqrt(omega0Sq);
+        
+        // Initial ensemble configuration in phase space E
+        const N_BOUNDARY = 100;
+        const centerTheta = 0.8, centerOmega = 0.0, radius = 0.15;
+        let points = [];
+        
+        // Time tracking & Ergodic Integration h_T(x)
+        let simTime = 0;
+        let runningIntegral = 0;
+        let timeAvgHistory = [];
+        let centerPoint = { theta: centerTheta, omega: centerOmega };
+
+        function initEnsemble() {
+            points = [];
+            for (let i = 0; i < N_BOUNDARY; i++) {
+                let angle = (i / N_BOUNDARY) * 2 * Math.PI;
+                points.push({
+                    theta: centerTheta + radius * Math.cos(angle),
+                    omega: centerOmega + radius * Math.sin(angle)
+                });
+            }
+            centerPoint = { theta: centerTheta, omega: centerOmega };
+            simTime = 0;
+            runningIntegral = 0;
+            timeAvgHistory = [];
+            updateEquationHeader();
+        }
+
+        // Motion equations for T_t
+        function derivatives(theta, omega, damped) {
+            const gamma = damped ? 0.3 : 0.0;
+            return {
+                dTheta: omega,
+                dOmega: -omega0Sq * Math.sin(theta) - gamma * omega
+            };
+        }
+
+        // RK4 integration
+        function stepRK4(pt, dt, damped) {
+            let k1 = derivatives(pt.theta, pt.omega, damped);
+            let k2 = derivatives(pt.theta + 0.5*dt*k1.dTheta, pt.omega + 0.5*dt*k1.dOmega, damped);
+            let k3 = derivatives(pt.theta + 0.5*dt*k2.dTheta, pt.omega + 0.5*dt*k2.dOmega, damped);
+            let k4 = derivatives(pt.theta + dt*k3.dTheta, pt.omega + dt*k3.dOmega, damped);
+
+            pt.theta += (dt / 6) * (k1.dTheta + 2*k2.dTheta + 2*k3.dTheta + k4.dTheta);
+            pt.omega += (dt / 6) * (k1.dOmega + 2*k2.dOmega + 2*k3.dOmega + k4.dOmega);
+        }
+
+        // Polygon area in phase space E
+        function calculatePhaseArea() {
+            let area = 0;
+            for (let i = 0; i < points.length; i++) {
+                let j = (i + 1) % points.length;
+                area += points[i].theta * points[j].omega;
+                area -= points[j].theta * points[i].omega;
+            }
+            return Math.abs(area) / 2.0;
+        }
+
+        // Phase Space Observable h(x)
+        function evaluateObservable(theta, omega) {
+            const type = document.getElementById('obsSelect').value;
+            if (type === 'kinetic') return 0.5 * omega * omega;
+            if (type === 'potential') return 1.0 - Math.cos(theta);
+            return theta + 0.5 * omega * omega;
+        }
+
+        // Compute Coefficients A_\lambda = [h(x) \bar{f_\lambda(x)}]_{average}
+        function computeFourierCoefficients(maxLambda = 6) {
+            let coeffs = [];
+            const N = points.length;
+
+            for (let lambda = -maxLambda; lambda <= maxLambda; lambda++) {
+                let reAcc = 0, imAcc = 0;
+                for (let i = 0; i < N; i++) {
+                    const pt = points[i];
+                    const val = evaluateObservable(pt.theta, pt.omega);
+                    const phi = Math.atan2(pt.omega / omega0, pt.theta);
+                    
+                    reAcc += val * Math.cos(-lambda * phi);
+                    imAcc += val * Math.sin(-lambda * phi);
+                }
+                const re = reAcc / N;
+                const im = imAcc / N;
+                coeffs.push({ lambda, re, im, mag: Math.sqrt(re * re + im * im) });
+            }
+            return coeffs;
+        }
+
+        function updateEquationHeader() {
+            const eqHeader = document.getElementById('equation-header');
+            katex.render("h(T_t x) = \\sum_\\lambda A_\\lambda \\alpha_\\lambda(t) f_\\lambda(x) \\implies h_T(x) = \\frac{1}{T}\\int_0^T h(T_t x) dt \\xrightarrow{T \\to \\infty} \\int_E h(x) dx = A_0", eqHeader, { displayMode: true });
+        }
+
+        function draw() {
+            // 1. Physical Space Canvas
+            pCtx.clearRect(0, 0, physCanvas.width, physCanvas.height);
+            const cx = physCanvas.width / 2, cy = 60, rodLength = 160;
+            
+            pCtx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+            pCtx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+            
+            points.forEach(pt => {
+                let px = cx + rodLength * Math.sin(pt.theta);
+                let py = cy + rodLength * Math.cos(pt.theta);
+                pCtx.beginPath();
+                pCtx.moveTo(cx, cy);
+                pCtx.lineTo(px, py);
+                pCtx.stroke();
+                pCtx.beginPath();
+                pCtx.arc(px, py, 3, 0, 2*Math.PI);
+                pCtx.fill();
+            });
+
+            // Center trajectory point x_0
+            let cPx = cx + rodLength * Math.sin(centerPoint.theta);
+            let cPy = cy + rodLength * Math.cos(centerPoint.theta);
+            pCtx.strokeStyle = '#f59e0b';
+            pCtx.lineWidth = 2;
+            pCtx.beginPath();
+            pCtx.moveTo(cx, cy);
+            pCtx.lineTo(cPx, cPy);
+            pCtx.stroke();
+            pCtx.fillStyle = '#f59e0b';
+            pCtx.beginPath();
+            pCtx.arc(cPx, cPy, 6, 0, 2*Math.PI);
+            pCtx.fill();
+
+            // 2. Phase Space E Canvas
+            phCtx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
+            phCtx.strokeStyle = '#475569';
+            phCtx.lineWidth = 1;
+            phCtx.beginPath();
+            phCtx.moveTo(0, 150); phCtx.lineTo(380, 150);
+            phCtx.moveTo(190, 0); phCtx.lineTo(190, 300);
+            phCtx.stroke();
+
+            function toCanvas(th, om) {
+                return {
+                    x: 190 + (th / 3.0) * 190,
+                    y: 150 - (om / 6.0) * 150
+                };
+            }
+
+            phCtx.beginPath();
+            let start = toCanvas(points[0].theta, points[0].omega);
+            phCtx.moveTo(start.x, start.y);
+            for (let i = 1; i < points.length; i++) {
+                let p = toCanvas(points[i].theta, points[i].omega);
+                phCtx.lineTo(p.x, p.y);
+            }
+            phCtx.closePath();
+            phCtx.fillStyle = isDamped ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+            phCtx.strokeStyle = isDamped ? '#ef4444' : '#38bdf8';
+            phCtx.lineWidth = 2;
+            phCtx.fill();
+            phCtx.stroke();
+
+            // Active trajectory point T_t x
+            let cP = toCanvas(centerPoint.theta, centerPoint.omega);
+            phCtx.fillStyle = '#f59e0b';
+            phCtx.beginPath();
+            phCtx.arc(cP.x, cP.y, 4, 0, 2*Math.PI);
+            phCtx.fill();
+
+            // 3. Group Character Spectrum |A_\lambda|^2 Canvas
+            spCtx.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+            const coeffs = computeFourierCoefficients(6);
+            const margin = 35;
+            const plotW = spectrumCanvas.width - 2 * margin;
+            const plotH = spectrumCanvas.height - 2 * margin;
+
+            spCtx.strokeStyle = '#475569';
+            spCtx.lineWidth = 1;
+            spCtx.beginPath();
+            spCtx.moveTo(margin, spectrumCanvas.height - margin);
+            spCtx.lineTo(spectrumCanvas.width - margin, spectrumCanvas.height - margin);
+            spCtx.stroke();
+
+            coeffs.forEach(c => {
+                const normLambda = (c.lambda + 6) / 12.0;
+                const x = margin + normLambda * plotW;
+                const barH = (c.mag / 2.0) * plotH;
+                const y = spectrumCanvas.height - margin - barH;
+
+                spCtx.strokeStyle = c.lambda === 0 ? '#38bdf8' : '#f59e0b';
+                spCtx.lineWidth = c.lambda === 0 ? 4 : 2;
+                spCtx.beginPath();
+                spCtx.moveTo(x, spectrumCanvas.height - margin);
+                spCtx.lineTo(x, y);
+                spCtx.stroke();
+
+                spCtx.fillStyle = c.lambda === 0 ? '#38bdf8' : '#f59e0b';
+                spCtx.beginPath();
+                spCtx.arc(x, y, 3, 0, 2*Math.PI);
+                spCtx.fill();
+            });
+
+            // Update A_0 stat box (\int_E h(x) dx)
+            const a0 = coeffs.find(c => c.lambda === 0)?.mag || 0;
+            document.getElementById('c0Val').innerText = a0.toFixed(4);
+
+            // 4. Ergodic Convergence h_T(x) Canvas
+            erCtx.clearRect(0, 0, ergodicCanvas.width, ergodicCanvas.height);
+            erCtx.strokeStyle = '#475569';
+            erCtx.lineWidth = 1;
+            erCtx.beginPath();
+            erCtx.moveTo(margin, ergodicCanvas.height - margin);
+            erCtx.lineTo(ergodicCanvas.width - margin, ergodicCanvas.height - margin);
+            erCtx.moveTo(margin, margin);
+            erCtx.lineTo(margin, ergodicCanvas.height - margin);
+            erCtx.stroke();
+
+            // Dashed Ensemble Average \int_E h(x) dx Baseline
+            const a0Y = ergodicCanvas.height - margin - (a0 / 2.0) * plotH;
+            erCtx.strokeStyle = '#38bdf8';
+            erCtx.setLineDash([4, 4]);
+            erCtx.lineWidth = 2;
+            erCtx.beginPath();
+            erCtx.moveTo(margin, a0Y);
+            erCtx.lineTo(ergodicCanvas.width - margin, a0Y);
+            erCtx.stroke();
+            erCtx.setLineDash([]);
+
+            // Plot Running Time Average h_T(x)
+            if (timeAvgHistory.length > 0) {
+                erCtx.strokeStyle = '#f59e0b';
+                erCtx.lineWidth = 2;
+                erCtx.beginPath();
+                timeAvgHistory.forEach((pt, idx) => {
+                    const x = margin + (idx / 400) * plotW;
+                    const y = ergodicCanvas.height - margin - (pt.avg / 2.0) * plotH;
+                    if (idx === 0) erCtx.moveTo(x, y);
+                    else erCtx.lineTo(x, y);
+                });
+                erCtx.stroke();
+            }
+        }
+
+        function update() {
+            if (isRunning) {
+                const dt = 0.02;
+                simTime += dt;
+
+                // Step boundary ensemble points under transformation T_t
+                points.forEach(pt => stepRK4(pt, dt, isDamped));
+                // Step center point x_0 under T_t
+                stepRK4(centerPoint, dt, isDamped);
+
+                // Compute instantaneous observable h(T_t x) and time average h_T(x)
+                const currentVal = evaluateObservable(centerPoint.theta, centerPoint.omega);
+                runningIntegral += currentVal * dt;
+                const h_T = runningIntegral / simTime;
+
+                timeAvgHistory.push({ t: simTime, avg: h_T });
+                if (timeAvgHistory.length > 400) timeAvgHistory.shift();
+
+                document.getElementById('areaVal').innerText = calculatePhaseArea().toFixed(4);
+                document.getElementById('avgVal').innerText = h_T.toFixed(4);
+            }
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        // Button and UI logic
+        document.getElementById('playBtn').onclick = (e) => {
+            isRunning = !isRunning;
+            e.target.innerText = isRunning ? 'pause' : 'play';
+        };
+        document.getElementById('resetBtn').onclick = () => initEnsemble();
+        document.getElementById('dampedCheck').onchange = (e) => {
+            isDamped = e.target.checked;
+        };
+        document.getElementById('obsSelect').onchange = () => {
+            simTime = 0;
+            runningIntegral = 0;
+            timeAvgHistory = [];
+            updateEquationHeader();
+        };
+
+        window.onload = () => {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false }
+                ],
+                ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
+                throwOnError: false
+            });
+            initEnsemble();
+            update();
+        };
+    </script>
+</body>
+</html>
