@@ -34,6 +34,7 @@ test('old refreshed pools survive upgrade while new languages use bundled data',
  const cached={updated:'2026-01-01',words:{fa:structuredClone(data.words.fa),ru:data.words.ru}};cached.words.fa[0].reading='saved custom reading';
  const merged=mergePools(cached,data);assert.equal(validPool(merged),true);assert.equal(merged.words.fa[0].reading,'saved custom reading');assert.deepEqual(merged.words.zh,data.words.zh);assert.equal(merged.updatedByLanguage.fa,'2026-01-01');
  assert.equal(validPool(cached),false);assert.throws(()=>mergePools(null,cached));
+ const damaged=structuredClone(cached);damaged.words.fa[0]=null;assert.equal(validPool(damaged),false);assert.deepEqual(mergePools(damaged,data).words.fa,data.words.fa);
 });
 
 test('French and Mandarin grading, coverage progression and missed-word reviews work independently',()=>{
