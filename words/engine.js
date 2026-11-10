@@ -1,8 +1,20 @@
-export const WORDS={fa:[],ru:[]};
-export function setVocabulary(words){for(const lang of ['fa','ru'])WORDS[lang]=words[lang];}
+import {LANGUAGE_IDS} from './languages.js';
+export const WORDS=Object.fromEntries(LANGUAGE_IDS.map(l=>[l,[]]));
+export function setVocabulary(words){for(const lang of LANGUAGE_IDS)WORDS[lang]=words[lang];}
 export const LEVELS=['Swadesh 100','Frequent vocabulary','Extended vocabulary'];
 export function dateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-export function fresh(){return {version:1,profiles:{fa:{level:0,strong:0},ru:{level:0,strong:0}},days:{},memory:{fa:{},ru:{}}};}
+export function fresh(){return {version:2,profiles:Object.fromEntries(LANGUAGE_IDS.map(l=>[l,{level:0,strong:0}])),days:{},memory:Object.fromEntries(LANGUAGE_IDS.map(l=>[l,{}]))};}
+export function migrateProgress(s){
+ if(!validProgress(s))throw Error('Invalid progress');
+ const next=structuredClone(s);next.version=2;
+ for(const l of LANGUAGE_IDS){next.profiles[l]??={level:0,strong:0};next.memory[l]??={};}
+ return next;
+}
+export function completeDay(s,key){const d=s.days[key];if(!d)return false;const required=d.fr||d.zh?LANGUAGE_IDS:['fa','ru'];return required.every(l=>d[l]?.complete);}
+export function streak(s,today=dateKey()){
+ let cursor=today;if(!completeDay(s,cursor)){const d=new Date(cursor+'T12:00:00');d.setDate(d.getDate()-1);cursor=dateKey(d);}
+ let count=0;while(completeDay(s,cursor)){count++;const d=new Date(cursor+'T12:00:00');d.setDate(d.getDate()-1);cursor=dateKey(d);}return count;
+}
 function hash(s){let a=2166136261;for(const c of s)a=Math.imul(a^c.charCodeAt(0),16777619);a=Math.imul(a^(a>>>16),0x85ebca6b);a=Math.imul(a^(a>>>13),0xc2b2ae35);return (a^(a>>>16))>>>0;}
 export function plan(state,day,lang){
  state.days[day]??={};
@@ -42,13 +54,14 @@ export function answer(state,day,lang,value){
 function normalizeNative(s){return s.normalize('NFD').replace(/[\u0300-\u036f\u064b-\u065f]/g,'').trim();}
 export function validProgress(s){
  try{
- if(s?.version!==1||!s.days||!s.memory||!s.profiles)return false;
- for(const l of ['fa','ru']){const p=s.profiles[l];if(!Number.isInteger(p?.level)||p.level<0||p.level>2||!Number.isInteger(p.strong)||p.strong<0||!s.memory[l])return false;
+ if(![1,2].includes(s?.version)||!s.days||!s.memory||!s.profiles)return false;
+ if(Object.keys(s.profiles).some(l=>!LANGUAGE_IDS.includes(l))||Object.keys(s.memory).some(l=>!LANGUAGE_IDS.includes(l)))return false;
+ for(const l of LANGUAGE_IDS){if(s.version===1&&!['fa','ru'].includes(l)&&!s.profiles[l]&&!s.memory[l])continue;const p=s.profiles[l];if(!Number.isInteger(p?.level)||p.level<0||p.level>2||!Number.isInteger(p.strong)||p.strong<0||!s.memory[l])return false;
  for(const m of Object.values(s.memory[l]))if(!Number.isInteger(m.hits)||m.hits<0||typeof m.wrong!=='boolean'||!/^\d{4}-\d{2}-\d{2}$/.test(m.last))return false;}
  for(const [day,languages] of Object.entries(s.days)){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return false;
  for(const [l,p] of Object.entries(languages)){
- if(!['fa','ru'].includes(l)||!Number.isInteger(p.level)||p.level<0||p.level>2||p.ids.length!==10||new Set(p.ids).size!==10||p.items.length!==10||p.options.length!==10||p.seen.length>10||new Set(p.seen).size!==p.seen.length||!p.seen.every(id=>p.ids.includes(id))||p.answers.length>10||typeof p.complete!=='boolean')return false;
+ if(!LANGUAGE_IDS.includes(l)||!s.profiles[l]||!s.memory[l]||!Number.isInteger(p.level)||p.level<0||p.level>2||p.ids.length!==10||new Set(p.ids).size!==10||p.items.length!==10||p.options.length!==10||p.seen.length>10||new Set(p.seen).size!==p.seen.length||!p.seen.every(id=>p.ids.includes(id))||p.answers.length>10||typeof p.complete!=='boolean')return false;
  for(let i=0;i<10;i++){const w=p.items[i],o=p.options[i];if(w.id!==p.ids[i]||!w.id.startsWith(l+'-')||!['word','meaning','reading'].every(k=>typeof w[k]==='string')||o.length!==4||!o.every(v=>typeof v==='string')||new Set(o).size!==4||!o.includes(w.meaning))return false;}
  if(!p.answers.every((a,i)=>p.options[i].includes(a.value)&&a.correct===(a.value===p.items[i].meaning)))return false;
  if(p.complete!==(p.answers.length===10)||p.complete&&p.score!==p.answers.filter(a=>a.correct).length*10)return false;

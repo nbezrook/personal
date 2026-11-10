@@ -1,6 +1,6 @@
 # Vocabulary sources and adaptations
 
-The included vocabulary snapshot contains 281 Persian and 283 Russian entries.
+The included vocabulary snapshot contains 281 Persian, 283 Russian, 207 French, and 207 Standard Mandarin entries.
 The first level contains exactly 100 concepts per language. The source pages are
 207-entry lists; the foundation is the actual 100-concept subset, not their first
 100 rows.
@@ -13,6 +13,13 @@ The first level contains exactly 100 concepts per language. The source pages are
   https://en.wiktionary.org/wiki/Appendix:Persian_Swadesh_list
 - Wiktionary contributors, **Appendix:Russian Swadesh list**:
   https://en.wiktionary.org/wiki/Appendix:Russian_Swadesh_list
+
+- Wiktionary contributors, **Appendix:French Swadesh list**:
+  https://en.wiktionary.org/wiki/Appendix:French_Swadesh_list
+- Wiktionary contributors, **Appendix:Mandarin Swadesh lists**:
+  https://en.wiktionary.org/wiki/Appendix:Mandarin_Swadesh_lists
+
+French uses the first translation with its IPA pronunciation. Mandarin uses only the Standard Mandarin column, selecting the simplified form of the first alternative (or shared characters), paired with its first pinyin reading. Sichuanese and Nanjingese columns are excluded.
 
 Selected the first native-language form and its transliteration from each entry.
 Alternative senses and forms are not exhaustive. Retained page revision IDs in
@@ -30,14 +37,17 @@ hermitdave, **FrequencyWords**, OpenSubtitles2018 corpus word-form frequencies:
 https://github.com/hermitdave/FrequencyWords
 
 Source files:
+- https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/fr/fr_50k.txt
+- https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/zh_cn/zh_cn_50k.txt
 - https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/fa/fa_50k.txt
 - https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/ru/ru_50k.txt
 
 Additional vocabulary combines the remaining Swadesh 207 concepts with a curated
-90-entry seed per language, removing supplements whose native form already exists
+90-entry seed for Farsi and Russian, removing supplements whose native form already exists
 in the Swadesh list. The supplemental seed is in words.js.
 Rank is the source file's one-based row number, including all original tokens.
-Lookup normalizes diacritics, Persian/Arabic kaf and yeh, Russian ё/е, and Persian
+French lookup preserves accents. Mandarin uses simplified word forms. Other
+lookup normalizes diacritics, Persian/Arabic kaf and yeh, Russian ё/е, and Persian
 joiners. The first matching normalized token supplies the rank. Whole phrases or
 infinitives may be unranked even when their parts or inflected forms are common.
 
