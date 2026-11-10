@@ -3,9 +3,14 @@
 Available at `/words/grammar/`, linked from the daily vocabulary app.
 
 The reference covers standard Iranian Persian, Russian, French, and Mandarin
-Chinese (simplified characters and pinyin). Its 30 reference sections remain
-readable without JavaScript and include source links. Browser printing hides
-the interactive quiz and navigation.
+Chinese (simplified characters and pinyin). It has 30 beginner topics and 24 additional topics, grouped into Intermediate
+and Advanced disclosures for each language. Click a heading or use Enter/Space
+to reveal its three topics. The native HTML disclosures work without JavaScript.
+Each topic includes examples, translations, and source links.
+
+`levels.js` opens disclosures when following section links and expands them for
+printing, then restores their previous state. Browser printing hides the quiz
+and navigation. The existing quiz practices beginner topics.
 
 The optional quiz uses a local 40-question bank: ten questions per language.
 Each attempt shuffles question and choice order. Mixed attempts include at least
@@ -24,6 +29,7 @@ visit if browser storage is unavailable. No account, backend, or API is needed.
 - `questions.js`: question bank, answer keys, explanations, and reference IDs.
 - `quiz-engine.js`: randomization, grading, and saved-attempt validation.
 - `quiz.js`: browser UI and local progress persistence.
+- `levels.js`: fragment navigation and print expansion for reference disclosures.
 
 When editing a question, verify its answer against the linked reference, give it
 four distinct choices and one answer key, and link its explanation to a section
